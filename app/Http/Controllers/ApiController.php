@@ -382,7 +382,7 @@ class ApiController extends Controller
 
     public function dailyHadith()
     {
-        $file = storage_path('app/hadiths.json');
+        $file = public_path('hadiths.json');
         $hadiths = json_decode(file_get_contents($file), true);
 
         // যদি date param থাকে use করবে, না থাকলে today
