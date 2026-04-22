@@ -398,4 +398,68 @@ class ApiController extends Controller
             'source' => $hadith['source']
         ]);
     }
+
+    public function islamicEvents(Request $request)
+{
+    date_default_timezone_set('Asia/Dhaka');
+
+    $today = date("Y-m-d");
+    $nextYear = date("Y-m-d", strtotime("+1 year"));
+
+    $events = [
+        ["title" => "Islamic New Year", "hijri" => "01-01"],
+        ["title" => "Day of Ashura", "hijri" => "10-01"],
+        ["title" => "Arbaeen", "hijri" => "20-02"],
+        ["title" => "Mawlid (Prophet’s Birthday)", "hijri" => "12-03"],
+        ["title" => "Isra and Mi'raj", "hijri" => "27-07"],
+        ["title" => "Mid-Sha'ban (Shab-e-Barat)", "hijri" => "15-08"],
+        ["title" => "Ramadan Begins", "hijri" => "01-09"],
+        ["title" => "Nuzul al-Quran", "hijri" => "17-09"],
+        ["title" => "Laylat al-Qadr", "hijri" => "27-09"],
+        ["title" => "Eid al-Fitr", "hijri" => "01-10"],
+        ["title" => "Hajj Begins", "hijri" => "08-12"],
+        ["title" => "Day of Arafah", "hijri" => "09-12"],
+        ["title" => "Eid al-Adha", "hijri" => "10-12"],
+        ["title" => "Days of Tashreeq", "hijri" => "11-12"]
+    ];
+
+    $years = [1447, 1448, 1449];
+    $final = [];
+
+    foreach ($years as $hYear) {
+        foreach ($events as $event) {
+
+            $hijriDate = $event['hijri'] . "-" . $hYear;
+
+            $url = "https://api.aladhan.com/v1/hToG?date=$hijriDate";
+            $response = @file_get_contents($url);
+            $data = json_decode($response, true);
+
+            if (isset($data['data']['gregorian']['date'])) {
+
+                $gregorian = date("Y-m-d", strtotime($data['data']['gregorian']['date']));
+
+                if ($gregorian >= $today && $gregorian <= $nextYear) {
+
+                    $final[] = [
+                        "title" => $event['title'],
+                        "hijri_date" => $hijriDate,
+                        "gregorian_date" => date("d-m-Y", strtotime($gregorian))
+                    ];
+                }
+            }
+        }
+    }
+
+    // sort by upcoming date
+    usort($final, function ($a, $b) {
+        return strtotime($a['gregorian_date']) - strtotime($b['gregorian_date']);
+    });
+
+    return response()->json([
+        "year_range" => date("Y") . " - " . date("Y", strtotime("+1 year")),
+        "total" => count($final),
+        "data" => $final
+    ]);
+}
 }
