@@ -11,3 +11,4 @@ Route::get('/ramadan-times',[ApiController::class,'ramadanTimes']);
 Route::get('/surah-list',[ApiController::class,'surahList']);
 Route::get('/surah-details', [ApiController::class, 'surahDetails']);
 Route::get('/surah-arabic',[ApiController::class,'surahArabic']);
+Route::get('/daily-hadith', [ApiController::class, 'dailyHadith']);

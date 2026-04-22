@@ -379,4 +379,23 @@ class ApiController extends Controller
             "arabic_text" => trim($arabicText)
         ]);
     }
+
+    public function dailyHadith()
+    {
+        $file = storage_path('app/hadiths.json');
+        $hadiths = json_decode(file_get_contents($file), true);
+
+        // যদি date param থাকে use করবে, না থাকলে today
+        $date = request('date') ?? now()->toDateString();
+
+        $index = crc32($date) % count($hadiths);
+
+        $hadith = $hadiths[$index];
+
+        return response()->json([
+            'date' => $date,
+            'hadith' => $hadith['text'],
+            'source' => $hadith['source']
+        ]);
+    }
 }
