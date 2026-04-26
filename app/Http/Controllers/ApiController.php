@@ -275,33 +275,66 @@ class ApiController extends Controller
     
     public function surahDetails(Request $request)
     {
+        mb_internal_encoding("UTF-8");
+
         $id = $request->query('id');
         $page = (int) $request->query('page', 1);
         $perPage = 15;
 
         if (!$id) {
-            return response()->json(["error" => "surah id required"]);
+            return response()->json([
+                "error" => "surah id required"
+            ]);
         }
 
-        // Arabic
+        // API calls
         $arabic = json_decode(@file_get_contents("https://api.alquran.cloud/v1/surah/$id/quran-uthmani"), true);
-
-        // Transliteration
         $translit = json_decode(@file_get_contents("https://api.alquran.cloud/v1/surah/$id/en.transliteration"), true);
-
-        // Bangla
         $bangla = json_decode(@file_get_contents("https://api.alquran.cloud/v1/surah/$id/bn.bengali"), true);
 
         if (!$arabic || !$translit || !$bangla) {
-            return response()->json(["error" => "Data not available"]);
+            return response()->json([
+                "error" => "Data not available"
+            ]);
         }
 
         $a = $arabic['data']['ayahs'];
         $t = $translit['data']['ayahs'];
         $b = $bangla['data']['ayahs'];
 
+        // ✅ Proper Bismillah removal (all cases handled)
+        if ($arabic['data']['number'] != 1 && isset($a[0]['text'])) {
+
+            $text = $a[0]['text'];
+
+            if (str_contains($text, 'بِسْمِ')) {
+
+                // remove Bismillah part only
+                $cleanText = preg_replace(
+                    '/^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/u',
+                    '',
+                    $text
+                );
+
+                // 👉 যদি পুরো ayah শুধু Bismillah ছিল
+                if (trim($cleanText) === '') {
+                    // remove full ayah
+                    array_shift($a);
+                    array_shift($t);
+                    array_shift($b);
+                } else {
+                    // 👉 যদি Bismillah + extra text থাকে
+                    $a[0]['text'] = $cleanText;
+                }
+            }
+        }
+
+        // ✅ pagination
         $total = count($a);
         $totalPages = ceil($total / $perPage);
+
+        if ($page < 1) $page = 1;
+        if ($page > $totalPages) $page = $totalPages;
 
         $offset = ($page - 1) * $perPage;
 
